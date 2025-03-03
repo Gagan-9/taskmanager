@@ -1,24 +1,27 @@
 import { useState } from 'react';
-
-const TaskForm = ({ users, selectedUser, onCreateTask }) => {
+import axios from 'axios';
+const TaskForm = ({ users, setTasks }) => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [assignedTo, setAssignedTo] = useState(selectedUser || '');
+  const [assignedTo, setAssignedTo] = useState('');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!title || !description || !assignedTo) {
-      alert('Please fill all fields');
-      return;
+    try {
+      const token = localStorage.getItem('token');
+      const headers = { Authorization: `Bearer ${token}` };
+
+      const response = await axios.post(
+        `${import.meta.env.VITE_API_URL}/tasks`,
+        { title, description, assignedTo },
+        { headers }
+      );
+
+      console.log('Task created:', response.data); // Log the created task
+      setTasks(prevTasks => [...prevTasks, response.data]);
+    } catch (error) {
+      console.error('Error creating task:', error.response?.data || error.message);
     }
-
-    const taskData = { title, description, assignedTo };
-    onCreateTask(taskData);
-
-    // Reset form
-    setTitle('');
-    setDescription('');
-    setAssignedTo('');
   };
 
   return (
@@ -37,16 +40,10 @@ const TaskForm = ({ users, selectedUser, onCreateTask }) => {
         placeholder="Description"
         required
       />
-      <select
-        value={assignedTo}
-        onChange={(e) => setAssignedTo(e.target.value)}
-        required
-      >
+      <select value={assignedTo} onChange={(e) => setAssignedTo(e.target.value)}>
         <option value="">Assign to</option>
         {users.map(user => (
-          <option key={user.id} value={user.id}>
-            {user.username}
-          </option>
+          <option key={user.id} value={user.id}>{user.username}</option>
         ))}
       </select>
       <button type="submit">Create Task</button>
